@@ -1,10 +1,23 @@
-import { Component, OnInit, HostListener, ElementRef, forwardRef, Input, OnChanges, SimpleChange } from '@angular/core';
+import { 
+  Component, 
+  OnInit,
+  AfterViewInit, 
+  HostListener, 
+  ElementRef, 
+  Renderer,
+  forwardRef, 
+  Input, 
+  OnChanges, 
+  SimpleChange,
+  ViewChild 
+} from '@angular/core';
 import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 import * as dateFns from 'date-fns';
+import * as noUiSlider from 'nouislider';
 
 export interface NgDateRangePickerOptions {
   theme: 'default' | 'green' | 'teal' | 'cyan' | 'grape' | 'red' | 'gray';
-  range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly';
+  range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td';
   dayNames: string[];
   presetNames: string[];
   dateFormat: string;
@@ -34,25 +47,31 @@ export let DATERANGEPICKER_VALUE_ACCESSOR: any = {
 @Component({
   selector: 'ng-daterangepicker',
   templateUrl: 'ng-daterangepicker.component.html',
-  styleUrls: ['ng-daterangepicker.sass'],
+  styleUrls: ['ng-daterangepicker.sass', '../styles/slider.scss'],
   providers: [ DATERANGEPICKER_VALUE_ACCESSOR ]
 })
-export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit, OnChanges {
+export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnChanges {
   @Input() options: NgDateRangePickerOptions;
+  @ViewChild('timerange') timerange: ElementRef;
 
   modelValue: string;
   opened: false | 'from' | 'to';
   date: Date;
   dateFrom: Date;
   dateTo: Date;
+  nextDate: Date;
+  totalDays: number;
   dayNames: string[];
   days: IDay[];
-  range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly';
+  nextDays: IDay[];
+  dateFns: object;
+  range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td';
+  ranges = ['tm', 'lm', 'lw', 'tw', 'ty', 'ly', 'yd', 'td'];
   defaultOptions: NgDateRangePickerOptions = {
     theme: 'default',
     range: 'tm',
     dayNames: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    presetNames: ['This Month', 'Last Month', 'This Week', 'Last Week', 'This Year', 'Last Year', 'Start', 'End'],
+    presetNames: ['This Month', 'Last Month', 'This Week', 'Last Week', 'This Year', 'Last Year', 'Yesterday', 'Today', 'Start', 'End'],
     dateFormat: 'yMd',
     outputFormat: 'DD/MM/YYYY',
     startOfWeek: 0
@@ -61,7 +80,12 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   private onTouchedCallback: () => void = () => { };
   private onChangeCallback: (_: any) => void = () => { };
 
-  constructor(private elementRef: ElementRef) { }
+  constructor(
+    private elementRef: ElementRef, 
+    private renderer: Renderer
+  ) {
+    this.dateFns = dateFns;
+  }
 
   get value(): string {
     return this.modelValue;
@@ -89,13 +113,47 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   ngOnInit() {
     this.opened = false;
     this.date = dateFns.startOfDay(new Date());
+    this.nextDate = dateFns.addMonths(this.date, 1),
     this.options = this.options || this.defaultOptions;
+    this.totalDays = dateFns.differenceInDays(this.dateTo, this.dateFrom);
     this.initNames();
     this.selectRange(this.options.range);
   }
 
+  ngAfterViewInit() {
+    const slider = this.timerange.nativeElement;
+
+    noUiSlider.create(slider, {
+      start: [0, 1440],
+      connect: true,
+      step: 1,
+      margin: 70,
+      range: {
+        'min': 0,
+        'max': 1440
+      }
+    });
+  }
+
   ngOnChanges(changes: {[propName: string]: SimpleChange}) {
     this.options = this.options || this.defaultOptions;
+  }
+
+  convertMinutesToTime(minutes, isFull = false) {
+    const hh = Math.trunc(minutes/60);
+    const mm = minutes % 60;
+    const fullHH = hh % 12 < 10 ? `0${hh % 12}` : hh % 12;
+    const fullMM = mm < 10 ? `0${mm}` : mm;
+    const abbr = hh >= 12 ? 'pm' : 'am';
+    const result = `${ 
+      !isFull ? fullHH : hh 
+    }:${ 
+      fullMM
+    } ${ 
+      !isFull ? abbr : ''
+     }`;
+
+    return result;
   }
 
   initNames(): void {
@@ -104,6 +162,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
 
   generateCalendar(): void {
     this.days = [];
+    this.nextDays = [];
     let start: Date = dateFns.startOfMonth(this.date);
     let end: Date = dateFns.endOfMonth(this.date);
 
@@ -113,6 +172,23 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         day: dateFns.getDate(d),
         weekday: dateFns.getDay(d),
         today: dateFns.isToday(d),
+        yesterday: dateFns.isYesterday(d),
+        firstMonthDay: dateFns.isFirstDayOfMonth(d),
+        lastMonthDay: dateFns.isLastDayOfMonth(d),
+        visible: true,
+        from: dateFns.isSameDay(this.dateFrom, d),
+        to: dateFns.isSameDay(this.dateTo, d),
+        isWithinRange: dateFns.isWithinRange(d, this.dateFrom, this.dateTo)
+      };
+    });
+
+    let nextDays: IDay[] = dateFns.eachDay(dateFns.addMonths(start, 1), dateFns.addMonths(end, 1)).map(d => {
+      return {
+        date: d,
+        day: dateFns.getDate(d),
+        weekday: dateFns.getDay(d),
+        today: dateFns.isToday(d),
+        yesterday: dateFns.isYesterday(d),
         firstMonthDay: dateFns.isFirstDayOfMonth(d),
         lastMonthDay: dateFns.isLastDayOfMonth(d),
         visible: true,
@@ -142,7 +218,9 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
       });
     }
 
+    this.totalDays = dateFns.differenceInDays(this.dateTo, this.dateFrom);
     this.days = prevMonthDays.concat(days);
+    this.nextDays = nextDays;
     this.value = `${dateFns.format(this.dateFrom, this.options.outputFormat)}-${dateFns.format(this.dateTo, this.options.outputFormat)}`;
   }
 
@@ -158,19 +236,22 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     this.opened = false;
   }
 
-  selectDate(e: MouseEvent, index: number): void {
+  selectDate(e: MouseEvent, index: number, isNext?: boolean): void {
     e.preventDefault();
     let selectedDate: Date = this.days[index].date;
-    if ((this.opened === 'from' && dateFns.isAfter(selectedDate, this.dateTo)) ||
-      (this.opened === 'to' && dateFns.isBefore(selectedDate, this.dateFrom))) {
+    let selectedNextDate: Date = this.nextDays[index].date;
+    let date = isNext ? selectedNextDate : selectedDate;
+
+    if ((this.opened === 'from' && dateFns.isAfter(date, this.dateTo)) ||
+      (this.opened === 'to' && dateFns.isBefore(date, this.dateFrom))) {
       return;
     }
 
     if (this.opened === 'from') {
-      this.dateFrom = selectedDate;
+      this.dateFrom = date;
       this.opened = 'to';
     } else if (this.opened === 'to') {
-      this.dateTo = selectedDate;
+      this.dateTo = date;
       this.opened = 'from';
     }
 
@@ -179,15 +260,19 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
 
   prevMonth(): void {
     this.date = dateFns.subMonths(this.date, 1);
+    this.nextDate = dateFns.subMonths(this.nextDate, 1);
+
     this.generateCalendar();
   }
 
   nextMonth(): void {
     this.date = dateFns.addMonths(this.date, 1);
+    this.nextDate = dateFns.addMonths(this.nextDate, 1);
+
     this.generateCalendar();
   }
 
-  selectRange(range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly'): void {
+  selectRange(range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td'): void {
     let today = dateFns.startOfDay(new Date());
 
     switch (range) {
@@ -217,6 +302,14 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         today = dateFns.subYears(today, 1);
         this.dateFrom = dateFns.startOfYear(today);
         this.dateTo = dateFns.endOfYear(today);
+        break;
+      case 'yd':
+        this.dateFrom = dateFns.startOfYesterday();
+        this.dateTo = dateFns.endOfYesterday();
+        break;
+      case 'td':
+        this.dateFrom = dateFns.startOfToday();
+        this.dateTo = dateFns.endOfToday();
         break;
     }
 

@@ -1,0 +1,34 @@
+
+#timerange {
+  width: 100%;
+  height: 2px;
+  background: #bebebe;
+  border: none;
+  border-radius: 10px;
+
+  .noUi-connect {
+    background: #008fc4;
+  }
+    
+  .noUi-handle {
+    left: -2px !important;
+    width: 16px !important;
+    height: 16px !important;
+    background: #008fc4;
+    border: none;
+    border-radius: 50%;
+    box-shadow: none;
+    outline: none;
+    
+    &:before,
+    &:after {
+      display: none
+    }
+  }
+    
+  .noUi-handle-upper {
+    left: auto !important;
+    right: 14px;
+  }
+  
+}
