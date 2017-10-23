@@ -47,7 +47,7 @@ export let DATERANGEPICKER_VALUE_ACCESSOR: any = {
 @Component({
   selector: 'ng-daterangepicker',
   templateUrl: 'ng-daterangepicker.component.html',
-  styleUrls: ['ng-daterangepicker.sass', '../styles/slider.scss'],
+  styleUrls: ['ng-daterangepicker.sass', 'slider.sass'],
   providers: [ DATERANGEPICKER_VALUE_ACCESSOR ]
 })
 export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnChanges {
