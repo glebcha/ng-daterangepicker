@@ -13,7 +13,6 @@ import {
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 import * as dateFns from 'date-fns';
-import * as noUiSlider from 'nouislider';
 
 export interface NgDateRangePickerOptions {
   theme: 'default' | 'green' | 'teal' | 'cyan' | 'grape' | 'red' | 'gray';
@@ -47,42 +46,64 @@ export let DATERANGEPICKER_VALUE_ACCESSOR: any = {
 @Component({
   selector: 'ng-daterangepicker',
   templateUrl: 'ng-daterangepicker.component.html',
-  styleUrls: ['ng-daterangepicker.sass', 'slider.sass'],
+  styleUrls: ['ng-daterangepicker.sass'],
   providers: [ DATERANGEPICKER_VALUE_ACCESSOR ]
 })
 export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnChanges {
   @Input() options: NgDateRangePickerOptions;
-  @ViewChild('timerange') timerange: ElementRef;
 
   modelValue: string;
   opened: false | 'from' | 'to';
   date: Date;
   dateFrom: Date;
   dateTo: Date;
+  dateFromError: string;
+  dateToError: string;
   nextDate: Date;
   totalDays: number;
   dayNames: string[];
   days: IDay[];
   nextDays: IDay[];
   dateFns: object;
-  range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td';
-  ranges = ['tm', 'lm', 'lw', 'tw', 'ty', 'ly', 'yd', 'td'];
+  range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'var';
+  ranges = ['tm', 'lm', 'lw', 'tw', 'ty', 'ly', 'yd', 'td', 'var'];
   defaultOptions: NgDateRangePickerOptions = {
     theme: 'default',
     range: 'tm',
     dayNames: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    presetNames: ['This Month', 'Last Month', 'This Week', 'Last Week', 'This Year', 'Last Year', 'Yesterday', 'Today', 'Start', 'End'],
+    presetNames: [
+      'This Month', 
+      'Last Month', 
+      'This Week', 
+      'Last Week', 
+      'This Year', 
+      'Last Year', 
+      'Yesterday', 
+      'Today', 
+      'Custom', 
+      'Start', 
+      'End'
+    ],
     dateFormat: 'yMd',
     outputFormat: 'DD/MM/YYYY',
     startOfWeek: 0
-  }
+  };
+  prevFrom = 0;
+  prevTo = 0;
+
+  public dateInputFrom = '';
+  public dateInputTo = '';
+  public mask = [
+    /[0-1]/, /\d/, '/', /[0-3]/, /\d/, '/', /\d/, /\d/, /\d/, /\d/, ' ', 
+    /[0-1]/, /\d/, ':', /[0-5]/, /[0-9]/, ' ', /[A-Z]/, /[A-Z]/
+  ];
 
   private onTouchedCallback: () => void = () => { };
   private onChangeCallback: (_: any) => void = () => { };
 
   constructor(
     private elementRef: ElementRef, 
-    private renderer: Renderer
+    private renderer: Renderer,
   ) {
     this.dateFns = dateFns;
   }
@@ -121,18 +142,8 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   }
 
   ngAfterViewInit() {
-    const slider = this.timerange.nativeElement;
-
-    noUiSlider.create(slider, {
-      start: [0, 1440],
-      connect: true,
-      step: 1,
-      margin: 70,
-      range: {
-        'min': 0,
-        'max': 1440
-      }
-    });
+    this.dateInputFrom = dateFns.format(this.dateFrom, this.options.dateFormat);
+    this.dateInputTo = dateFns.format(this.dateTo, this.options.dateFormat);
   }
 
   ngOnChanges(changes: {[propName: string]: SimpleChange}) {
@@ -221,7 +232,11 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     this.totalDays = dateFns.differenceInDays(this.dateTo, this.dateFrom);
     this.days = prevMonthDays.concat(days);
     this.nextDays = nextDays;
-    this.value = `${dateFns.format(this.dateFrom, this.options.outputFormat)}-${dateFns.format(this.dateTo, this.options.outputFormat)}`;
+    this.value = `${
+      dateFns.format(this.dateFrom, this.options.outputFormat)
+    }-${
+      dateFns.format(this.dateTo, this.options.outputFormat)
+    }`;
   }
 
   toggleCalendar(e: MouseEvent, selection: 'from' | 'to'): void {
@@ -249,12 +264,15 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
 
     if (this.opened === 'from') {
       this.dateFrom = date;
+      this.dateInputFrom = dateFns.format(date, this.options.outputFormat);
       this.opened = 'to';
     } else if (this.opened === 'to') {
       this.dateTo = date;
+      this.dateInputTo = dateFns.format(date, this.options.outputFormat);
       this.opened = 'from';
     }
 
+    this.range = 'var';
     this.generateCalendar();
   }
 
@@ -272,7 +290,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     this.generateCalendar();
   }
 
-  selectRange(range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td'): void {
+  selectRange(range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'var'): void {
     let today = dateFns.startOfDay(new Date());
 
     switch (range) {
@@ -313,8 +331,70 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         break;
     }
 
+    this.dateInputFrom = dateFns.format(this.dateFrom, this.options.outputFormat);
+    this.dateInputTo = dateFns.format(this.dateTo, this.options.outputFormat);
     this.range = range;
     this.generateCalendar();
+  }
+
+  onInputChange = (date: string, isFrom = true) => {
+    const value = dateFns.parse(date);
+    const isValidDate = dateFns.isValid(value);
+    const isWithinRange = isValidDate && dateFns.isWithinRange(value, this.dateFrom, this.dateTo);
+
+    if (isWithinRange) {
+      if (isFrom) {
+        this.dateFrom = value;
+        this.dateFromError = null;
+      } else {
+        this.dateTo = value;
+        this.dateToError = null;
+      }
+      
+      this.range = 'var';
+      this.generateCalendar();
+    } else {
+      if (isFrom) {
+        this.dateFromError = 'Please, correct start date format';
+      } else {
+        this.dateToError = 'Please, correct end date format';
+      }
+      console.log('error date')
+    }
+
+  }
+
+  onTimeChange(e, isFrom = true) {
+    const {value} = e;
+    let newValue = 0;
+
+    if (isFrom) {
+      if (value > this.prevFrom) {
+        newValue = value - this.prevFrom;
+        this.dateFrom = dateFns.addMinutes(this.dateFrom, newValue);
+      } else {
+        newValue = this.prevFrom - value;
+        this.dateFrom = dateFns.subMinutes(this.dateFrom, newValue);
+      }
+
+      this.prevFrom = value;
+      this.dateInputFrom = dateFns.format(this.dateFrom, this.options.outputFormat);
+      console.log(this.dateInputFrom);
+    } else {
+      if (value > this.prevTo) {
+        newValue = value - this.prevTo;
+        this.dateTo = dateFns.addMinutes(this.dateTo, newValue);
+      } else {
+        newValue = this.prevTo - value;
+        this.dateTo = dateFns.subMinutes(this.dateTo, newValue);
+      }
+
+      this.prevTo = value;
+      this.dateInputTo = dateFns.format(this.dateTo, this.options.outputFormat);
+    }
+
+    this.generateCalendar();
+
   }
 
   @HostListener('document:click', ['$event'])

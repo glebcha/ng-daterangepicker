@@ -8,10 +8,10 @@
                   'theme-gray': options.theme === 'gray' }">
 
   <div class="input-section" (click)="toggleCalendar($event, 'from')">
-      <span class="value-txt">{{ dateFrom | date:options.dateFormat }}</span>
+      <span class="value-txt">{{ dateFns.format(dateFrom, options.dateFormat) }}</span>
   </div>
   <div class="input-section" (click)="toggleCalendar($event, 'to')">
-      <span class="value-txt">{{ dateTo | date:options.dateFormat }}</span>
+      <span class="value-txt">{{ dateFns.format(dateTo, options.dateFormat) }}</span>
   </div>
 
   <span class="cal-icon" (click)="toggleCalendar($event, 'from')">
@@ -41,13 +41,9 @@
           class="side-button" 
           (click)="selectRange(item)" 
           [class.mat-primary]="range === item"
-          class="mat-raised-button"
+          mat-raised-button
         >
-          <span class="mat-button-wrapper">
             {{options.presetNames[i]}}
-          </span>
-          <div class="mat-button-ripple mat-ripple"></div>
-          <div class="mat-button-focus-overlay"></div>
         </button>
       </div>
     </div>
@@ -92,6 +88,27 @@
                 <span *ngIf="d.visible" class="day-num" [class.is-active]="d.from || d.to">{{ d.day }}</span>
               </div>
             </div>
+
+            <mat-form-field>
+              <input 
+                matInput
+                [textMask]="{mask: mask}" 
+                [(ngModel)]="dateInputFrom"
+                (ngModelChange)="onInputChange($event)" 
+                type="text" 
+                showMask="true"
+              />
+              <div *ngIf="dateFromError">{{dateFromError}}</div>
+            </mat-form-field>
+
+            <mat-slider 
+              *ngIf="range === 'var'" 
+              min="0" 
+              max="1440" 
+              step="5" 
+              value="0"
+              (change)="onTimeChange($event)"
+            ></mat-slider>
           </div>
       
           <div class="calendar-container">
@@ -126,9 +143,29 @@
                 <span *ngIf="d.visible" class="day-num" [class.is-active]="d.from || d.to">{{ d.day }}</span>
               </div>
             </div>
+
+            <mat-form-field>
+              <input 
+                matInput 
+                [textMask]="{mask: mask}" 
+                [(ngModel)]="dateInputTo"
+                (ngModelChange)="onInputChange($event, false)" 
+                type="text" 
+                showMask="true"
+              />
+              <div *ngIf="dateToError">{{dateToError}}</div>
+            </mat-form-field>
+            
+            <mat-slider 
+              *ngIf="range === 'var'" 
+              min="0" 
+              max="1440" 
+              step="5" 
+              value="0"
+              (change)="onTimeChange($event, false)"
+            ></mat-slider>
           </div>
 
-          <div #timerange id="timerange"></div>
     </div>
 
   </div>

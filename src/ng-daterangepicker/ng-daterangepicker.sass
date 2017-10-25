@@ -238,25 +238,7 @@
         justify-content: space-between
         width: 138px
         height: 100%
-
-        .side-button
-          background: $white
-          border-radius: 15px
-          border: 1px solid $blue
-          height: 30px
-          width: 138px
-          display: block
-          text-align: center
-          outline: none
-          margin-bottom: 15px
-          color: $text-button
-          font-size: 13px
-          cursor: pointer
-
-          &:hover, &.is-active
-            background: $blue
-            color: $white
-
+      
   &.theme-green
     &.is-active
       border-color: $cyan
@@ -446,3 +428,10 @@
 
     &:before
       display: block
+
+.mat-form-field-wrapper
+  padding-bottom: 0
+
+.mat-form-field,
+.mat-slider 
+  width: 100%
