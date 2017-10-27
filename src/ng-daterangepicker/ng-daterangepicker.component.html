@@ -121,17 +121,15 @@
               </div>
             </div>
 
-            <mat-form-field>
-              <input 
-                matInput 
-                [textMask]="{mask: range === 'td' ? fullMask : mask}" 
-                [(ngModel)]="dateInputFrom"
-                (ngModelChange)="onInputChange($event)" 
-                type="text" 
-                showMask="true"
-              />
-              <div *ngIf="dateToError">{{dateToError}}</div>
-            </mat-form-field>
+            <input 
+              class="masked-input"
+              [textMask]="{mask: range === 'td' ? fullMask : mask}" 
+              [(ngModel)]="dateInputFrom"
+              (ngModelChange)="onInputChange($event)" 
+              type="text" 
+              showMask="true"
+            />
+            <div *ngIf="dateToError">{{dateToError}}</div>
           </div>
 
           <div class="calendar-container">
@@ -169,17 +167,15 @@
               </div>
             </div>
 
-            <mat-form-field>
-              <input 
-                matInput
-                [textMask]="{mask: range === 'td' ? fullMask : mask}" 
-                [(ngModel)]="dateInputTo"
-                (ngModelChange)="onInputChange($event, false)" 
-                type="text" 
-                showMask="true"
-              />
-              <div *ngIf="dateToError">{{dateToError}}</div>
-            </mat-form-field>
+            <input 
+              class="masked-input"
+              [textMask]="{mask: range === 'td' ? fullMask : mask}" 
+              [(ngModel)]="dateInputTo"
+              (ngModelChange)="onInputChange($event, false)" 
+              type="text" 
+              showMask="true"
+            />
+            <div *ngIf="dateToError">{{dateToError}}</div>
           </div>
 
       </div>

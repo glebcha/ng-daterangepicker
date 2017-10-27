@@ -366,9 +366,9 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   onInputChange = (date: string, isFrom = true) => {
     const value = dateFns.parse(date);
     const isValidDate = dateFns.isValid(value);
-    const isWithinRange = isValidDate && dateFns.isWithinRange(value, this.dateFrom, this.dateTo);
+    const isNotFuture = isValidDate && !dateFns.isFuture(value);
 
-    if (isWithinRange) {
+    if (isNotFuture) {
       if (isFrom) {
         this.dateFrom = value;
         this.dateFromError = null;
