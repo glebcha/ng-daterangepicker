@@ -17,11 +17,13 @@ import * as dateFns from 'date-fns';
 export interface NgDateRangePickerOptions {
   theme: 'default' | 'green' | 'teal' | 'cyan' | 'grape' | 'red' | 'gray';
   range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td';
+  ranges: Array<string>;
   dayNames: string[];
   presetNames: string[];
   dateFormat: string;
   outputFormat: string;
   startOfWeek: number;
+  onChange: Function;
 }
 
 export interface IDay {
@@ -59,19 +61,20 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   dateTo: Date;
   dateFromError: string;
   dateToError: string;
-  nextDate: Date;
+  prevDate: Date;
   totalDays: number;
   dayNames: string[];
   days: IDay[];
-  nextDays: IDay[];
+  prevDays: IDay[];
   dateFns: object;
-  range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'var';
-  ranges = ['tm', 'lm', 'lw', 'tw', 'ty', 'ly', 'yd', 'td', 'var'];
+  range:  'var' | 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'l7d' | '3m' | 'ytod';
   defaultOptions: NgDateRangePickerOptions = {
     theme: 'default',
     range: 'tm',
+    ranges: ['var', 'tm', 'lm', 'lw', 'tw', 'ty', 'ly', 'yd', 'td', 'l7d', '3m', 'ytod'],
     dayNames: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     presetNames: [
+      'Custom', 
       'This Month', 
       'Last Month', 
       'This Week', 
@@ -79,23 +82,29 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
       'This Year', 
       'Last Year', 
       'Yesterday', 
-      'Today', 
-      'Custom', 
+      'Today',
+      'Last 7 days',
+      '3 months', 
+      'Year to date',
       'Start', 
       'End'
     ],
     dateFormat: 'yMd',
     outputFormat: 'DD/MM/YYYY',
-    startOfWeek: 0
+    startOfWeek: 0,
+    onChange: () => {}
   };
   prevFrom = 0;
   prevTo = 0;
 
   public dateInputFrom = '';
   public dateInputTo = '';
-  public mask = [
+  public fullMask = [
     /[0-1]/, /\d/, '/', /[0-3]/, /\d/, '/', /\d/, /\d/, /\d/, /\d/, ' ', 
-    /[0-1]/, /\d/, ':', /[0-5]/, /[0-9]/, ' ', /[A-Z]/, /[A-Z]/
+    /[0-1]/, /\d/, ':', /[0-5]/, /[0-9]/, ' ', /[A-Za-z]/, /[A-Za-z]/
+  ];
+  public mask = [
+    /[0-1]/, /\d/, '/', /[0-3]/, /\d/, '/', /\d/, /\d/, /\d/, /\d/
   ];
 
   private onTouchedCallback: () => void = () => { };
@@ -132,18 +141,21 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   }
 
   ngOnInit() {
+    const {options:{onChange}} = this;
+
     this.opened = false;
     this.date = dateFns.startOfDay(new Date());
-    this.nextDate = dateFns.addMonths(this.date, 1),
+    this.prevDate = dateFns.subMonths(this.date, 1),
     this.options = this.options || this.defaultOptions;
     this.totalDays = dateFns.differenceInDays(this.dateTo, this.dateFrom);
     this.initNames();
     this.selectRange(this.options.range);
+    onChange && onChange(this.dateFrom, this.dateTo);
   }
 
   ngAfterViewInit() {
-    this.dateInputFrom = dateFns.format(this.dateFrom, this.options.dateFormat);
-    this.dateInputTo = dateFns.format(this.dateTo, this.options.dateFormat);
+    this.dateInputFrom = dateFns.format(this.dateFrom, this.options.outputFormat);
+    this.dateInputTo = dateFns.format(this.dateTo, this.options.outputFormat);
   }
 
   ngOnChanges(changes: {[propName: string]: SimpleChange}) {
@@ -172,8 +184,10 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   }
 
   generateCalendar(): void {
+    const {onChange} = this.options;
+
     this.days = [];
-    this.nextDays = [];
+    this.prevDays = [];
     let start: Date = dateFns.startOfMonth(this.date);
     let end: Date = dateFns.endOfMonth(this.date);
 
@@ -193,7 +207,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
       };
     });
 
-    let nextDays: IDay[] = dateFns.eachDay(dateFns.addMonths(start, 1), dateFns.addMonths(end, 1)).map(d => {
+    let prevDays: IDay[] = dateFns.eachDay(dateFns.subMonths(start, 1), dateFns.subMonths(end, 1)).map(d => {
       return {
         date: d,
         day: dateFns.getDate(d),
@@ -231,7 +245,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
 
     this.totalDays = dateFns.differenceInDays(this.dateTo, this.dateFrom);
     this.days = prevMonthDays.concat(days);
-    this.nextDays = nextDays;
+    this.prevDays = prevDays;
     this.value = `${
       dateFns.format(this.dateFrom, this.options.outputFormat)
     }-${
@@ -247,15 +261,15 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     }
   }
 
-  closeCalendar(e: MouseEvent): void {
+  closeCalendar(e?: MouseEvent): void {
     this.opened = false;
   }
 
-  selectDate(e: MouseEvent, index: number, isNext?: boolean): void {
+  selectDate(e: MouseEvent, index: number, isPrev?: boolean): void {
     e.preventDefault();
     let selectedDate: Date = this.days[index].date;
-    let selectedNextDate: Date = this.nextDays[index].date;
-    let date = isNext ? selectedNextDate : selectedDate;
+    let selectedPrevDate: Date = this.prevDays[index] ? this.prevDays[index].date : this.prevDays[index - 1].date;
+    let date = isPrev ? selectedPrevDate : selectedDate;
 
     if ((this.opened === 'from' && dateFns.isAfter(date, this.dateTo)) ||
       (this.opened === 'to' && dateFns.isBefore(date, this.dateFrom))) {
@@ -278,19 +292,19 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
 
   prevMonth(): void {
     this.date = dateFns.subMonths(this.date, 1);
-    this.nextDate = dateFns.subMonths(this.nextDate, 1);
+    this.prevDate = dateFns.subMonths(this.prevDate, 1);
 
     this.generateCalendar();
   }
 
   nextMonth(): void {
     this.date = dateFns.addMonths(this.date, 1);
-    this.nextDate = dateFns.addMonths(this.nextDate, 1);
+    this.prevDate = dateFns.addMonths(this.prevDate, 1);
 
     this.generateCalendar();
   }
 
-  selectRange(range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'var'): void {
+  selectRange(range: 'var' | 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'l7d' | '3m' | 'ytod'): void {
     let today = dateFns.startOfDay(new Date());
 
     switch (range) {
@@ -329,6 +343,18 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         this.dateFrom = dateFns.startOfToday();
         this.dateTo = dateFns.endOfToday();
         break;
+      case 'l7d':
+        this.dateFrom = dateFns.subWeeks(today, 1);
+        this.dateTo = today;
+        break;
+      case '3m':
+        this.dateFrom = dateFns.subMonths(today, 3);
+        this.dateTo = today;
+        break;
+      case 'ytod':
+        this.dateFrom = dateFns.subYears(today, 1);
+        this.dateTo = today;
+        break;
     }
 
     this.dateInputFrom = dateFns.format(this.dateFrom, this.options.outputFormat);
@@ -354,54 +380,66 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
       this.range = 'var';
       this.generateCalendar();
     } else {
-      if (isFrom) {
-        this.dateFromError = 'Please, correct start date format';
-      } else {
-        this.dateToError = 'Please, correct end date format';
-      }
-      console.log('error date')
+      // if (isFrom) {
+      //   this.dateFromError = 'Please, correct start date format';
+      // } else {
+      //   this.dateToError = 'Please, correct end date format';
+      // }
     }
 
   }
 
-  onTimeChange(e, isFrom = true) {
-    const {value} = e;
-    let newValue = 0;
+  // onTimeChange(e, isFrom = true) {
+  //   const {value} = e;
+  //   let newValue = 0;
 
-    if (isFrom) {
-      if (value > this.prevFrom) {
-        newValue = value - this.prevFrom;
-        this.dateFrom = dateFns.addMinutes(this.dateFrom, newValue);
-      } else {
-        newValue = this.prevFrom - value;
-        this.dateFrom = dateFns.subMinutes(this.dateFrom, newValue);
-      }
+  //   if (isFrom) {
+  //     if (value > this.prevFrom) {
+  //       newValue = value - this.prevFrom;
+  //       this.dateFrom = dateFns.addMinutes(this.dateFrom, newValue);
+  //     } else {
+  //       newValue = this.prevFrom - value;
+  //       this.dateFrom = dateFns.subMinutes(this.dateFrom, newValue);
+  //     }
 
-      this.prevFrom = value;
-      this.dateInputFrom = dateFns.format(this.dateFrom, this.options.outputFormat);
-      console.log(this.dateInputFrom);
-    } else {
-      if (value > this.prevTo) {
-        newValue = value - this.prevTo;
-        this.dateTo = dateFns.addMinutes(this.dateTo, newValue);
-      } else {
-        newValue = this.prevTo - value;
-        this.dateTo = dateFns.subMinutes(this.dateTo, newValue);
-      }
+  //     this.prevFrom = value;
+  //     this.dateInputFrom = dateFns.format(this.dateFrom, this.options.outputFormat);
+  //   } else {
+  //     if (value > this.prevTo) {
+  //       newValue = value - this.prevTo;
+  //       this.dateTo = dateFns.addMinutes(this.dateTo, newValue);
+  //     } else {
+  //       newValue = this.prevTo - value;
+  //       this.dateTo = dateFns.subMinutes(this.dateTo, newValue);
+  //     }
 
-      this.prevTo = value;
-      this.dateInputTo = dateFns.format(this.dateTo, this.options.outputFormat);
-    }
+  //     this.prevTo = value;
+  //     this.dateInputTo = dateFns.format(this.dateTo, this.options.outputFormat);
+  //   }
 
-    this.generateCalendar();
+  //   this.generateCalendar();
 
+  // }
+
+  resetCalendar(e: MouseEvent) {
+    const {options:{onChange}} = this;
+        
+    this.selectRange(this.options.range);
+    onChange && onChange(this.dateFrom, this.dateTo);
+  }
+
+  onConfirm() {
+    const {options:{onChange}} = this;
+
+    this.opened = false;
+    onChange && onChange(this.dateFrom, this.dateTo);
   }
 
   @HostListener('document:click', ['$event'])
   handleBlurClick(e: MouseEvent) {
     let target = e.srcElement || e.target;
     if (!this.elementRef.nativeElement.contains(e.target) && !(<Element>target).classList.contains('day-num')) {
-      this.opened = false;
+      this.closeCalendar();
     }
   }
 }
