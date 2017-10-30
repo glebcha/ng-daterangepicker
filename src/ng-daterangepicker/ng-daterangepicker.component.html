@@ -20,19 +20,12 @@
         {{ 
           dateFns.format(dateFrom, range === 'td' ? options.dateFormat : options.outputFormat) 
         }} - {{ 
-          dateFns.format(dateTo, range === 'td' ? options.dateFormat : options.outputFormat) 
-        }}
+          dateFns.format(dateTo, range === 'td' ? 'hh:mm A' : options.outputFormat) 
+        }} 
+        <span>({{totalTime}} {{range === 'td' ? 'hours' : 'days'}})</span>
       </span>
     </div>
   </div>
-
-  <!-- <span class="cal-icon" (click)="toggleCalendar($event, 'from')">
-    <svg width="94px" height="94px" viewBox="3 3 94 94" version="1.1">
-      <g id="Group" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" transform="translate(3.000000, 3.000000)">
-        <path d="M67.166,20.168 C69.238,20.168 70.916,18.489 70.916,16.418 L70.916,4.085 C70.916,2.014 69.238,0.335 67.166,0.335 C65.096,0.335 63.416,2.014 63.416,4.085 L63.416,16.418 C63.416,18.489 65.096,20.168 67.166,20.168 Z M26.834,20.168 C28.904,20.168 30.584,18.489 30.584,16.418 L30.584,4.085 C30.584,2.014 28.904,0.335 26.834,0.335 C24.762,0.335 23.084,2.014 23.084,4.085 L23.084,16.418 C23.084,18.489 24.762,20.168 26.834,20.168 Z M88.833,9.5 L75.416,9.5 L75.416,16.418 C75.416,20.967 71.715,24.668 67.166,24.668 C62.617,24.668 58.916,20.967 58.916,16.418 L58.916,9.5 L35.084,9.5 L35.084,16.418 C35.084,20.967 31.383,24.668 26.834,24.668 C22.285,24.668 18.584,20.967 18.584,16.418 L18.584,9.5 L5.167,9.5 C2.405,9.5 0.167,11.738 0.167,14.5 L0.167,35 L93.833,35 L93.833,14.5 C93.833,11.738 91.595,9.5 88.833,9.5 Z M0.167,88.167 C0.167,90.929 2.405,93.167 5.167,93.167 L88.833,93.167 C91.595,93.167 93.833,90.929 93.833,88.167 L93.833,39 L0.167,39 L0.167,88.167 Z M69.387,50.875 L82.179,50.875 L82.179,63.667 L69.387,63.667 L69.387,50.875 Z M69.387,69.125 L82.179,69.125 L82.179,81.917 L69.387,81.917 L69.387,69.125 Z M50.198,50.875 L62.99,50.875 L62.99,63.667 L50.198,63.667 L50.198,50.875 Z M50.198,69.125 L62.99,69.125 L62.99,81.917 L50.198,81.917 L50.198,69.125 Z M31.01,50.875 L43.802,50.875 L43.802,63.667 L31.01,63.667 L31.01,50.875 Z M31.01,69.125 L43.802,69.125 L43.802,81.917 L31.01,81.917 L31.01,69.125 Z M11.821,50.875 L24.613,50.875 L24.613,63.667 L11.821,63.667 L11.821,50.875 Z M11.821,69.125 L24.613,69.125 L24.613,81.917 L11.821,81.917 L11.821,69.125 Z" id="Shape" fill="#000000" fill-rule="nonzero"></path>
-      </g>
-    </svg>
-  </span> -->
 
   <div class="calendar" [ngClass]="{ 'is-opened': !!opened, 'is-to': opened === 'to' }">
 
@@ -44,20 +37,13 @@
               {{ 
                 dateFns.format(dateFrom, range === 'td' ? options.dateFormat : options.outputFormat) 
               }} - {{ 
-                dateFns.format(dateTo, range === 'td' ? options.dateFormat : options.outputFormat) 
-              }}
+                dateFns.format(dateTo, range === 'td' ? 'hh:mm A' : options.outputFormat) 
+              }} 
+              <span>({{totalTime}} {{range === 'td' ? 'hours' : 'days'}})</span>
           </span>
         </div>
       </div>
 
-    <!-- <span class="close-icon" (click)="closeCalendar($event)">
-      <svg width="28px" height="20px" viewBox="47 44 20 20" version="1.1">
-        <g id="Group" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" transform="translate(48.000000, 44.000000)">
-          <path d="M19.6876399,20 C19.6047542,19.999927 19.52529,19.9669423 19.4667175,19.9082976 L0.0839056416,0.525743396 C-0.0308734765,0.402566324 -0.0274867013,0.210616527 0.0915663128,0.0915650956 C0.210619327,-0.0274863359 0.402571676,-0.030873066 0.525750385,0.0839045261 L19.9085623,19.4664587 C19.9978567,19.5558631 20.0245499,19.6902301 19.9762091,19.8069762 C19.9278683,19.9237223 19.8139998,19.9998889 19.6876399,20 Z" id="Shape" fill="#000000" fill-rule="nonzero"></path>
-          <path d="M0.312360116,20 C0.186000167,19.9998889 0.0721317315,19.9237223 0.0237909073,19.8069762 C-0.0245499168,19.6902301 0.0021432967,19.5558631 0.0914377445,19.4664587 L19.4742496,0.0839045261 C19.5974283,-0.030873066 19.7893807,-0.0274863359 19.9084337,0.0915650956 C20.0274867,0.210616527 20.0308735,0.402566324 19.9160944,0.525743396 L0.533282488,19.9082976 C0.474709982,19.9669423 0.395245751,19.999927 0.312360116,20 L0.312360116,20 Z" id="Shape" fill="#000000" fill-rule="nonzero"></path>
-        </g>
-      </svg>
-    </span> -->
     <div class="calendar-content">
     <div class="side-container">
       <div class="side-container-buttons">
@@ -71,7 +57,12 @@
         >
             {{options.presetNames[i]}}
         </button>
-        <button class="mat-primary" (click)="onConfirm()" mat-raised-button>
+        <button 
+          class="mat-primary" 
+          (click)="onConfirm()"
+          [disabled]="dateFromError || dateToError" 
+          mat-raised-button
+        >
             Select
         </button>
       </div>
@@ -128,6 +119,7 @@
               (ngModelChange)="onInputChange($event)" 
               type="text" 
               showMask="true"
+              keepCharPositions="true"
             />
             <div *ngIf="dateToError">{{dateToError}}</div>
           </div>
@@ -174,6 +166,7 @@
               (ngModelChange)="onInputChange($event, false)" 
               type="text" 
               showMask="true"
+              keepCharPositions="true"
             />
             <div *ngIf="dateToError">{{dateToError}}</div>
           </div>

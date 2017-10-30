@@ -62,7 +62,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   dateFromError: string;
   dateToError: string;
   prevDate: Date;
-  totalDays: number;
+  totalTime: number;
   dayNames: string[];
   days: IDay[];
   prevDays: IDay[];
@@ -147,9 +147,15 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     this.date = dateFns.startOfDay(new Date());
     this.prevDate = dateFns.subMonths(this.date, 1),
     this.options = this.options || this.defaultOptions;
-    this.totalDays = dateFns.differenceInDays(this.dateTo, this.dateFrom);
     this.initNames();
     this.selectRange(this.options.range);
+
+    if (this.range === 'td') {
+      this.totalTime = dateFns.differenceInHours(this.dateTo, this.dateFrom);
+    } else {
+      this.totalTime = dateFns.differenceInDays(this.dateTo, this.dateFrom);
+    }
+
     onChange && onChange(this.dateFrom, this.dateTo);
   }
 
@@ -243,7 +249,12 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
       });
     }
 
-    this.totalDays = dateFns.differenceInDays(this.dateTo, this.dateFrom);
+    if (this.range === 'td') {
+      this.totalTime = dateFns.differenceInHours(this.dateTo, this.dateFrom);
+    } else {
+      this.totalTime = dateFns.differenceInDays(this.dateTo, this.dateFrom);
+    }
+
     this.days = prevMonthDays.concat(days);
     this.prevDays = prevDays;
     this.value = `${
@@ -306,6 +317,8 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
 
   selectRange(range: 'var' | 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'l7d' | '3m' | 'ytod'): void {
     let today = dateFns.startOfDay(new Date());
+    this.dateFromError = null;
+    this.dateToError = null;
 
     switch (range) {
       case 'tm':
@@ -342,6 +355,12 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
       case 'td':
         this.dateFrom = dateFns.startOfToday();
         this.dateTo = dateFns.endOfToday();
+
+        setTimeout(() => {
+          this.dateInputFrom = dateFns.format(this.dateFrom, this.options.dateFormat);
+          this.dateInputTo = dateFns.format(this.dateTo, this.options.dateFormat); 
+        }, 0);
+
         break;
       case 'l7d':
         this.dateFrom = dateFns.subWeeks(today, 1);
@@ -377,49 +396,20 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         this.dateToError = null;
       }
       
-      this.range = 'var';
+      if (this.range !== 'td') {
+        this.range = 'var';
+      }
+
       this.generateCalendar();
     } else {
-      // if (isFrom) {
-      //   this.dateFromError = 'Please, correct start date format';
-      // } else {
-      //   this.dateToError = 'Please, correct end date format';
-      // }
+      if (isFrom) {
+        this.dateFromError = 'Please, correct start date format';
+      } else {
+        this.dateToError = 'Please, correct end date format';
+      }
     }
 
   }
-
-  // onTimeChange(e, isFrom = true) {
-  //   const {value} = e;
-  //   let newValue = 0;
-
-  //   if (isFrom) {
-  //     if (value > this.prevFrom) {
-  //       newValue = value - this.prevFrom;
-  //       this.dateFrom = dateFns.addMinutes(this.dateFrom, newValue);
-  //     } else {
-  //       newValue = this.prevFrom - value;
-  //       this.dateFrom = dateFns.subMinutes(this.dateFrom, newValue);
-  //     }
-
-  //     this.prevFrom = value;
-  //     this.dateInputFrom = dateFns.format(this.dateFrom, this.options.outputFormat);
-  //   } else {
-  //     if (value > this.prevTo) {
-  //       newValue = value - this.prevTo;
-  //       this.dateTo = dateFns.addMinutes(this.dateTo, newValue);
-  //     } else {
-  //       newValue = this.prevTo - value;
-  //       this.dateTo = dateFns.subMinutes(this.dateTo, newValue);
-  //     }
-
-  //     this.prevTo = value;
-  //     this.dateInputTo = dateFns.format(this.dateTo, this.options.outputFormat);
-  //   }
-
-  //   this.generateCalendar();
-
-  // }
 
   resetCalendar(e: MouseEvent) {
     const {options:{onChange}} = this;
