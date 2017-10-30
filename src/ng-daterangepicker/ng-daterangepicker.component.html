@@ -114,6 +114,7 @@
 
             <input 
               class="masked-input"
+              [class.error]="dateFromError"
               [textMask]="{mask: range === 'td' ? fullMask : mask}" 
               [(ngModel)]="dateInputFrom"
               (ngModelChange)="onInputChange($event)" 
@@ -121,7 +122,6 @@
               showMask="true"
               keepCharPositions="true"
             />
-            <div *ngIf="dateToError">{{dateToError}}</div>
           </div>
 
           <div class="calendar-container">
@@ -161,6 +161,7 @@
 
             <input 
               class="masked-input"
+              [class.error]="dateToError"
               [textMask]="{mask: range === 'td' ? fullMask : mask}" 
               [(ngModel)]="dateInputTo"
               (ngModelChange)="onInputChange($event, false)" 
@@ -168,7 +169,6 @@
               showMask="true"
               keepCharPositions="true"
             />
-            <div *ngIf="dateToError">{{dateToError}}</div>
           </div>
 
       </div>
