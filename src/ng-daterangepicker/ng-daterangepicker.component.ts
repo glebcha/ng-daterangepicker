@@ -66,7 +66,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   dayNames: string[];
   days: IDay[];
   prevDays: IDay[];
-  dateFns: object;
+  dateFns: any;
   range:  'var' | 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'l7d' | '3m' | 'ytod';
   defaultOptions: NgDateRangePickerOptions = {
     theme: 'default',
