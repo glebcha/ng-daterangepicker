@@ -13,10 +13,11 @@ import {
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 import * as dateFns from 'date-fns';
+import matrix from './calendarMatrix';
 
 export interface NgDateRangePickerOptions {
   theme: 'default' | 'green' | 'teal' | 'cyan' | 'grape' | 'red' | 'gray';
-  range: 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td';
+  range: 'var' | 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'l7d' | '3m' | 'ytod';
   ranges: Array<string>;
   dayNames: string[];
   presetNames: string[];
@@ -121,6 +122,23 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     return this.modelValue;
   }
 
+  get currentRange() {
+    const {options: {presetNames, range, ranges}} = this;
+    const current = this.range || range;
+    const result = {
+      data: '',
+      valid: true
+    };
+
+    if (current && current === 'var') {
+      result.valid = false;
+    } else {
+      result.data = presetNames[ranges.indexOf(current)];
+    }
+
+    return result;
+  }
+
   set value(value: string) {
     if (!value) { return; }
     this.modelValue = value;
@@ -197,7 +215,9 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     let start: Date = dateFns.startOfMonth(this.date);
     let end: Date = dateFns.endOfMonth(this.date);
 
-    let days: IDay[] = dateFns.eachDay(start, end).map(d => {
+    let days: IDay[] = matrix({month: dateFns.getMonth(this.date)})
+    .reduce((arr, acc) => arr.concat(acc), [])
+    .map(d => {
       return {
         date: d,
         day: dateFns.getDate(d),
@@ -209,11 +229,15 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         visible: true,
         from: dateFns.isSameDay(this.dateFrom, d),
         to: dateFns.isSameDay(this.dateTo, d),
-        isWithinRange: dateFns.isWithinRange(d, this.dateFrom, this.dateTo)
+        isWithinRange: dateFns.isWithinRange(d, this.dateFrom, this.dateTo),
+        isInMonth: dateFns.isSameMonth(d, this.date),
+        isFutureDate: dateFns.isAfter(d, this.dateTo)
       };
     });
 
-    let prevDays: IDay[] = dateFns.eachDay(dateFns.subMonths(start, 1), dateFns.subMonths(end, 1)).map(d => {
+    let prevDays: IDay[] = matrix({month: dateFns.subMonths(this.date, 1).getMonth()})
+    .reduce((arr, acc) => arr.concat(acc), [])
+    .map(d => {
       return {
         date: d,
         day: dateFns.getDate(d),
@@ -225,7 +249,9 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         visible: true,
         from: dateFns.isSameDay(this.dateFrom, d),
         to: dateFns.isSameDay(this.dateTo, d),
-        isWithinRange: dateFns.isWithinRange(d, this.dateFrom, this.dateTo)
+        isWithinRange: dateFns.isWithinRange(d, this.dateFrom, this.dateTo),
+        isInMonth: dateFns.isSameMonth(d, this.prevDate),
+        isFutureDate: dateFns.isAfter(d, this.dateTo)
       };
     });
 
@@ -317,6 +343,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
 
   selectRange(range: 'var' | 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'l7d' | '3m' | 'ytod'): void {
     let today = dateFns.startOfDay(new Date());
+    this.range = range;
     this.dateFromError = null;
     this.dateToError = null;
 
@@ -427,8 +454,9 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
 
   @HostListener('document:click', ['$event'])
   handleBlurClick(e: MouseEvent) {
-    let target = e.srcElement || e.target;
-    if (!this.elementRef.nativeElement.contains(e.target) && !(<Element>target).classList.contains('day-num')) {
+    const target = e.srcElement || e.target;
+
+    if (!this.elementRef.nativeElement.contains(target) && !(<Element>target).classList.contains('day-num')) {
       this.closeCalendar();
     }
   }

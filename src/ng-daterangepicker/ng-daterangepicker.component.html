@@ -1,11 +1,4 @@
-<div class="ng-daterangepicker"
-     [ngClass]="{ 'is-active': !!opened,
-                  'theme-green': options.theme === 'green',
-                  'theme-teal': options.theme === 'teal',
-                  'theme-cyan': options.theme === 'cyan',
-                  'theme-grape': options.theme === 'grape',
-                  'theme-red': options.theme === 'red',
-                  'theme-gray': options.theme === 'gray' }">
+<div class="ng-daterangepicker" [ngClass]="{ 'is-active': !!opened }">
   <div class="select-root">
     <div class="select-container-input" (click)="toggleCalendar($event, 'from')">
       <span class="select-default" [ngClass]="{'focus': dateFrom && dateTo}">placeholder</span>
@@ -17,67 +10,80 @@
         close
       </mat-icon>
       <span class="select-active">
-        {{ 
-          dateFns.format(dateFrom, range === 'td' ? options.dateFormat : options.outputFormat) 
-        }} - {{ 
-          dateFns.format(dateTo, range === 'td' ? 'hh:mm A' : options.outputFormat) 
-        }} 
-        <span>({{totalTime}} {{range === 'td' ? 'hours' : 'days'}})</span>
+          <i>{{currentRange.data}}</i>
+          {{currentRange.valid ? ' (' : ''}}
+          {{ 
+            dateFns.format(dateFrom, range === 'td' ? options.dateFormat : options.outputFormat) 
+          }} - {{ 
+            dateFns.format(dateTo, range === 'td' ? 'hh:mm A' : options.outputFormat) 
+          }}
+          {{currentRange.valid ? ') ' : ''}} 
+          <span *ngIf="!currentRange.valid">
+            ({{totalTime}} {{range === 'td' ? 'hours' : 'days'}})
+          </span>
       </span>
     </div>
   </div>
 
   <div class="calendar" [ngClass]="{ 'is-opened': !!opened, 'is-to': opened === 'to' }">
 
-      <div class="select-root">
-        <div class="select-container-input">
-          <span class="select-default focus">placeholder</span>
-          <mat-icon class="select-icon keyboard_arrow_down" (click)="closeCalendar($event)">keyboard_arrow_down</mat-icon>
-          <span class="select-active">
-              {{ 
-                dateFns.format(dateFrom, range === 'td' ? options.dateFormat : options.outputFormat) 
-              }} - {{ 
-                dateFns.format(dateTo, range === 'td' ? 'hh:mm A' : options.outputFormat) 
-              }} 
-              <span>({{totalTime}} {{range === 'td' ? 'hours' : 'days'}})</span>
-          </span>
-        </div>
-      </div>
-
-    <div class="calendar-content">
-    <div class="side-container">
-      <div class="side-container-buttons">
-        <button 
-          *ngFor="let item of options.ranges; let i = index" 
-          type="button" 
-          class="side-button" 
-          (click)="selectRange(item)" 
-          [class.mat-primary]="range === item"
-          mat-button
-        >
-            {{options.presetNames[i]}}
-        </button>
-        <button 
-          class="mat-primary" 
-          (click)="onConfirm()"
-          [disabled]="dateFromError || dateToError" 
-          mat-raised-button
-        >
-            Select
-        </button>
+    <div class="select-root">
+      <div class="select-container-input">
+        <span class="select-default focus">placeholder</span>
+        <mat-icon class="select-icon keyboard_arrow_down" (click)="closeCalendar($event)">keyboard_arrow_down</mat-icon>
+        <span class="select-active">
+            <i>{{currentRange.data}}</i>
+            {{currentRange.valid ? ' (' : ''}}
+            {{ 
+              dateFns.format(dateFrom, range === 'td' ? options.dateFormat : options.outputFormat) 
+            }} - {{ 
+              dateFns.format(dateTo, range === 'td' ? 'hh:mm A' : options.outputFormat) 
+            }}
+            {{currentRange.valid ? ') ' : ''}} 
+            <span *ngIf="!currentRange.valid">
+              ({{totalTime}} {{range === 'td' ? 'hours' : 'days'}})
+            </span>
+        </span>
       </div>
     </div>
 
-    <div class="info-container">
-        <!-- <div class="info-container-dates">
-            <span>{{dateFns.format(dateFrom, 'MMM D, YYYY')}}</span>
-            <span class="next-icon">
-              {{totalDays}} days
-            </span>
-            <span>{{dateFns.format(dateTo, 'MMM D, YYYY')}}</span>
-        </div> -->
-           
+    <div class="calendar-content">
+      <div class="side-container">
+        <div class="side-container-buttons">
+          <button 
+            *ngFor="let item of options.ranges; let i = index" 
+            type="button" 
+            class="side-button"
+            [ngClass]="{active: range === item, 'mat-primary': range === item}"
+            (click)="selectRange(item)"
+            mat-button
+          >
+              {{options.presetNames[i]}}
+          </button>
+          <button 
+            class="mat-primary" 
+            (click)="onConfirm()"
+            [disabled]="dateFromError || dateToError" 
+            mat-raised-button
+          >
+              Select
+          </button>
+        </div>
+      </div>
+
+      <div class="info-container">           
           <div class="calendar-container">
+            <input 
+              class="masked-input"
+              [class.error]="dateFromError"
+              [textMask]="{mask: range === 'td' ? fullMask : mask}" 
+              [(ngModel)]="dateInputFrom"
+              (ngModelChange)="onInputChange($event)" 
+              type="text" 
+              showMask="true"
+              keepCharPositions="true"
+            />
+
             <div class="controls">
               <mat-icon 
                 class="control-icon navigate_before" 
@@ -100,31 +106,40 @@
             </div>
             <div class="days">
               <div class="day"
-                   *ngFor="let d of prevDays; let i = index;"
-                   [ngClass]="{
-                     'is-within-range': d.isWithinRange,
-                     'is-from': d.from,
-                     'is-to': d.to,
-                     'is-first-weekday': d.weekday === 1 || d.firstMonthDay,
-                     'is-last-weekday': d.weekday === 0 || d.lastMonthDay }"
-                   (click)="selectDate($event, i, true)">
-                <span *ngIf="d.visible" class="day-num" [class.is-active]="range === 'var' && (d.from || d.to)">{{ d.day }}</span>
+                *ngFor="let d of prevDays; let i = index;"
+                [ngClass]="{
+                  'is-within-range': d.isWithinRange,
+                  'is-from': d.from,
+                  'is-to': d.to,
+                  'not-in-month': !d.isInMonth,
+                  'is-future-date': d.isFutureDate,
+                  'is-first-weekday': d.weekday === 1 || d.firstMonthDay,
+                  'is-last-weekday': d.weekday === 0 || d.lastMonthDay }"
+                (click)="d.isInMonth && selectDate($event, i, true)"
+              >
+                <span 
+                  *ngIf="d.visible" 
+                  class="day-num" 
+                  [class.is-active]="range === 'var' && (d.from || d.to)"
+                >
+                  {{ d.day }}
+                </span>
               </div>
             </div>
+          </div>
 
+          <div class="calendar-container">
             <input 
               class="masked-input"
-              [class.error]="dateFromError"
+              [class.error]="dateToError"
               [textMask]="{mask: range === 'td' ? fullMask : mask}" 
-              [(ngModel)]="dateInputFrom"
-              (ngModelChange)="onInputChange($event)" 
+              [(ngModel)]="dateInputTo"
+              (ngModelChange)="onInputChange($event, false)" 
               type="text" 
               showMask="true"
               keepCharPositions="true"
             />
-          </div>
 
-          <div class="calendar-container">
             <div class="controls">
               <mat-icon 
                 class="control-icon navigate_before" 
@@ -147,28 +162,26 @@
             </div>
             <div class="days">
               <div class="day"
-                   *ngFor="let d of days; let i = index;"
-                   [ngClass]="{
-                     'is-within-range': d.isWithinRange,
-                     'is-from': d.from,
-                     'is-to': d.to,
-                     'is-first-weekday': d.weekday === 1 || d.firstMonthDay,
-                     'is-last-weekday': d.weekday === 0 || d.lastMonthDay }"
-                   (click)="selectDate($event, i)">
-                <span *ngIf="d.visible" class="day-num" [class.is-active]="range === 'var' && (d.from || d.to)">{{ d.day }}</span>
+                *ngFor="let d of days; let i = index;"
+                [ngClass]="{
+                  'is-within-range': d.isWithinRange,
+                  'is-from': d.from,
+                  'is-to': d.to,
+                  'not-in-month': !d.isInMonth,
+                  'is-future-date': d.isFutureDate,
+                  'is-first-weekday': d.weekday === 1 || d.firstMonthDay,
+                  'is-last-weekday': d.weekday === 0 || d.lastMonthDay }"
+                (click)="!d.isFuture && d.isInMonth && selectDate($event, i)"
+              >
+                <span 
+                  *ngIf="d.visible" 
+                  class="day-num" 
+                  [class.is-active]="range === 'var' && (d.from || d.to)"
+                >
+                  {{ d.day }}
+                </span>
               </div>
             </div>
-
-            <input 
-              class="masked-input"
-              [class.error]="dateToError"
-              [textMask]="{mask: range === 'td' ? fullMask : mask}" 
-              [(ngModel)]="dateInputTo"
-              (ngModelChange)="onInputChange($event, false)" 
-              type="text" 
-              showMask="true"
-              keepCharPositions="true"
-            />
           </div>
 
       </div>
