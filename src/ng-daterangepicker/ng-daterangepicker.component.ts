@@ -231,7 +231,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         to: dateFns.isSameDay(this.dateTo, d),
         isWithinRange: dateFns.isWithinRange(d, this.dateFrom, this.dateTo),
         isInMonth: dateFns.isSameMonth(d, this.date),
-        isFutureDate: dateFns.isAfter(d, this.dateTo)
+        isFutureDate: dateFns.isAfter(d, new Date())
       };
     });
 
@@ -251,7 +251,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         to: dateFns.isSameDay(this.dateTo, d),
         isWithinRange: dateFns.isWithinRange(d, this.dateFrom, this.dateTo),
         isInMonth: dateFns.isSameMonth(d, this.prevDate),
-        isFutureDate: dateFns.isAfter(d, this.dateTo)
+        isFutureDate: dateFns.isAfter(d, new Date())
       };
     });
 
@@ -308,8 +308,11 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     let selectedPrevDate: Date = this.prevDays[index] ? this.prevDays[index].date : this.prevDays[index - 1].date;
     let date = isPrev ? selectedPrevDate : selectedDate;
 
-    if ((this.opened === 'from' && dateFns.isAfter(date, this.dateTo)) ||
-      (this.opened === 'to' && dateFns.isBefore(date, this.dateFrom))) {
+    if (
+      (dateFns.isAfter(date, new Date())) ||
+      (this.opened === 'from' && dateFns.isAfter(date, this.dateTo)) ||
+      (this.opened === 'to' && dateFns.isBefore(date, this.dateFrom))
+    ) {
       return;
     }
 

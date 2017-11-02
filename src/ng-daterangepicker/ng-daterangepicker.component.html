@@ -115,7 +115,7 @@
                   'is-future-date': d.isFutureDate,
                   'is-first-weekday': d.weekday === 1 || d.firstMonthDay,
                   'is-last-weekday': d.weekday === 0 || d.lastMonthDay }"
-                (click)="d.isInMonth && selectDate($event, i, true)"
+                (click)="!d.isFututre && d.isInMonth && selectDate($event, i, true)"
               >
                 <span 
                   *ngIf="d.visible" 

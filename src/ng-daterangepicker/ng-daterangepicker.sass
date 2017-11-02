@@ -265,17 +265,30 @@ $widthWithPadding: calc(100% - 56px)
           text-align: center
           cursor: pointer
 
-          &.not-in-month, &.is-future-month
+          &.not-in-month,
+          &.is-future-date
+            cursor: inherit
+
+          &.not-in-month
             color: #8398ab !important
             background: $white !important
-            cursor: inherit
-            
-            .day-num:hover, .is-active
+
+            .day-num:hover
+              color: #8398ab !important
+
+          &.is-future-date, &.not-in-month
+            .day-num:hover
+              color: #2f3438
+
+            .day-num:hover, 
+            .is-active
               border-color: transparent !important
+              
+            .is-active
               background: $white !important
               color: #8398ab !important
 
-          &.is-future-date
+          &.is-future-date:not(.is-within-range)
             .day-num
               text-decoration: line-through
 
