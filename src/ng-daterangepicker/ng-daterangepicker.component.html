@@ -74,6 +74,7 @@
       <div class="info-container">           
           <div class="calendar-container">
             <input 
+              id="dateFrom"
               class="masked-input"
               [class.error]="dateFromError"
               [textMask]="{mask: range === 'td' ? fullMask : mask}" 
@@ -83,6 +84,7 @@
               showMask="true"
               keepCharPositions="true"
             />
+            <label for="dateFrom" [class.show]="dateFromError">{{dateFromError}}</label>            
 
             <div class="controls">
               <mat-icon 
@@ -105,17 +107,19 @@
               <span class="day-name" *ngFor="let name of dayNames">{{ name }}</span>
             </div>
             <div class="days">
-              <div class="day"
+              <div 
+                class="day"
                 *ngFor="let d of prevDays; let i = index;"
                 [ngClass]="{
                   'is-within-range': d.isWithinRange,
                   'is-from': d.from,
                   'is-to': d.to,
+                  'is-custom': range === 'var' && (d.from || d.to) && !d.isFutureDate && d.isInMonth,
                   'not-in-month': !d.isInMonth,
                   'is-future-date': d.isFutureDate,
                   'is-first-weekday': d.weekday === 1 || d.firstMonthDay,
                   'is-last-weekday': d.weekday === 0 || d.lastMonthDay }"
-                (click)="!d.isFututre && d.isInMonth && selectDate($event, i, true)"
+                (click)="!d.isFutureDate && d.isInMonth && selectDate($event, i, true)"
               >
                 <span 
                   *ngIf="d.visible" 
@@ -130,6 +134,7 @@
 
           <div class="calendar-container">
             <input 
+              id="dateTo"
               class="masked-input"
               [class.error]="dateToError"
               [textMask]="{mask: range === 'td' ? fullMask : mask}" 
@@ -139,6 +144,7 @@
               showMask="true"
               keepCharPositions="true"
             />
+            <label for="dateTo" [class.show]="dateToError">{{dateToError}}</label>
 
             <div class="controls">
               <mat-icon 
@@ -167,11 +173,12 @@
                   'is-within-range': d.isWithinRange,
                   'is-from': d.from,
                   'is-to': d.to,
+                  'is-custom': range === 'var' && (d.from || d.to) && !d.isFutureDate && d.isInMonth,
                   'not-in-month': !d.isInMonth,
                   'is-future-date': d.isFutureDate,
                   'is-first-weekday': d.weekday === 1 || d.firstMonthDay,
                   'is-last-weekday': d.weekday === 0 || d.lastMonthDay }"
-                (click)="!d.isFuture && d.isInMonth && selectDate($event, i)"
+                (click)="!d.isFutureDate && d.isInMonth && selectDate($event, i)"
               >
                 <span 
                   *ngIf="d.visible" 

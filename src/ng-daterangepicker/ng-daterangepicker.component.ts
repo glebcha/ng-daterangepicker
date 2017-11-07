@@ -159,8 +159,6 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   }
 
   ngOnInit() {
-    const {options:{onChange}} = this;
-
     this.opened = false;
     this.date = dateFns.startOfDay(new Date());
     this.prevDate = dateFns.subMonths(this.date, 1),
@@ -173,8 +171,6 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     } else {
       this.totalTime = dateFns.differenceInDays(this.dateTo, this.dateFrom);
     }
-
-    onChange && onChange(this.dateFrom, this.dateTo);
   }
 
   ngAfterViewInit() {
@@ -229,7 +225,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         visible: true,
         from: dateFns.isSameDay(this.dateFrom, d),
         to: dateFns.isSameDay(this.dateTo, d),
-        isWithinRange: dateFns.isWithinRange(d, this.dateFrom, this.dateTo),
+        isWithinRange: !dateFns.isAfter(this.dateFrom, this.dateTo) && dateFns.isWithinRange(d, this.dateFrom, this.dateTo),
         isInMonth: dateFns.isSameMonth(d, this.date),
         isFutureDate: dateFns.isAfter(d, new Date())
       };
@@ -249,7 +245,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
         visible: true,
         from: dateFns.isSameDay(this.dateFrom, d),
         to: dateFns.isSameDay(this.dateTo, d),
-        isWithinRange: dateFns.isWithinRange(d, this.dateFrom, this.dateTo),
+        isWithinRange: !dateFns.isAfter(this.dateFrom, this.dateTo) && dateFns.isWithinRange(d, this.dateFrom, this.dateTo),
         isInMonth: dateFns.isSameMonth(d, this.prevDate),
         isFutureDate: dateFns.isAfter(d, new Date())
       };
@@ -306,14 +302,16 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     e.preventDefault();
     let selectedDate: Date = this.days[index].date;
     let selectedPrevDate: Date = this.prevDays[index] ? this.prevDays[index].date : this.prevDays[index - 1].date;
-    let date = isPrev ? selectedPrevDate : selectedDate;
+    let date = !!isPrev ? selectedPrevDate : selectedDate;
 
     if (
-      (dateFns.isAfter(date, new Date())) ||
+      (dateFns.isFuture(date)) ||
       (this.opened === 'from' && dateFns.isAfter(date, this.dateTo)) ||
       (this.opened === 'to' && dateFns.isBefore(date, this.dateFrom))
     ) {
       return;
+    } else {
+      this.range = 'var';
     }
 
     if (this.opened === 'from') {
@@ -326,7 +324,6 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
       this.opened = 'from';
     }
 
-    this.range = 'var';
     this.generateCalendar();
   }
 
@@ -353,7 +350,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     switch (range) {
       case 'tm':
         this.dateFrom = dateFns.startOfMonth(today);
-        this.dateTo = dateFns.endOfMonth(today);
+        this.dateTo = today;
         break;
       case 'lm':
         today = dateFns.subMonths(today, 1);
