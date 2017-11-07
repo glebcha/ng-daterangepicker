@@ -68,6 +68,11 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   days: IDay[];
   prevDays: IDay[];
   dateFns: any;
+  oldValues: {
+    range: NgDateRangePickerOptions["range"],
+    from: Date, 
+    to: Date
+  };
   range:  'var' | 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'l7d' | '3m' | 'ytod';
   defaultOptions: NgDateRangePickerOptions = {
     theme: 'default',
@@ -158,13 +163,18 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
     this.onTouchedCallback = fn;
   }
 
-  ngOnInit() {
-    this.opened = false;
+  ngOnInit() {this.opened = false;
     this.date = dateFns.startOfDay(new Date());
     this.prevDate = dateFns.subMonths(this.date, 1),
     this.options = this.options || this.defaultOptions;
     this.initNames();
     this.selectRange(this.options.range);
+
+    this.oldValues = {
+      range: this.range,
+      from: this.dateFrom,
+      to: this.dateTo
+    };
 
     if (this.range === 'td') {
       this.totalTime = dateFns.differenceInHours(this.dateTo, this.dateFrom);
@@ -295,11 +305,19 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   }
 
   closeCalendar(e?: MouseEvent): void {
+    console.log(this.oldValues);
+
+    this.range = this.oldValues.range;
+    this.dateFrom = this.oldValues.from;
+    this.dateTo = this.oldValues.to;
+
+    this.generateCalendar();
     this.opened = false;
   }
 
   selectDate(e: MouseEvent, index: number, isPrev?: boolean): void {
     e.preventDefault();
+    const {dateFrom, dateTo} = this;
     let selectedDate: Date = this.days[index].date;
     let selectedPrevDate: Date = this.prevDays[index] ? this.prevDays[index].date : this.prevDays[index - 1].date;
     let date = !!isPrev ? selectedPrevDate : selectedDate;
@@ -342,6 +360,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   }
 
   selectRange(range: 'var' | 'tm' | 'lm' | 'lw' | 'tw' | 'ty' | 'ly' | 'yd' | 'td' | 'l7d' | '3m' | 'ytod'): void {
+    const {dateFrom, dateTo} = this;
     let today = dateFns.startOfDay(new Date());
     this.range = range;
     this.dateFromError = null;
@@ -440,7 +459,7 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
 
   resetCalendar(e: MouseEvent) {
     const {options:{onChange}} = this;
-        
+
     this.selectRange(this.options.range);
     onChange && onChange(this.dateFrom, this.dateTo);
   }
@@ -448,6 +467,11 @@ export class NgDateRangePickerComponent implements ControlValueAccessor, OnInit,
   onConfirm() {
     const {options:{onChange}} = this;
 
+    this.oldValues = {
+      range: this.range,
+      from: this.dateFrom,
+      to: this.dateTo
+    };
     this.opened = false;
     onChange && onChange(this.dateFrom, this.dateTo);
   }
